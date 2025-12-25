@@ -5,242 +5,144 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pocket Cozy Life</title>
 
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#ff8fab">
-
 <style>
 body{
   margin:0;
-  font-family:Arial Rounded MT Bold, Arial;
   background:#fce4ec;
+  font-family:Arial, sans-serif;
 }
-#game{
+
+#app{
   max-width:360px;
-  margin:auto;
   height:100vh;
+  margin:auto;
   background:#fff;
   display:flex;
   flex-direction:column;
 }
+
 header{
   background:#ff8fab;
   color:white;
   text-align:center;
-  padding:12px;
+  padding:10px;
   font-size:18px;
 }
+
 #hud{
   display:flex;
   justify-content:space-around;
   background:#ffd1dc;
   padding:6px;
 }
-  #room{
+
+#room{
   flex:1;
-  position:relative;
-  transition:.4s;
-  min-height:300px;
-  background:#fff5e6;
-  overflow:hidden;
-    <div style="
-  position:absolute;
-  inset:0;
+  background:#fff3e0;
   display:flex;
   align-items:flex-end;
   justify-content:space-around;
   padding-bottom:40px;
-">
-  <div style="font-size:48px">😊</div>
-  <div style="font-size:48px">🥰</div>
-  <div style="font-size:36px">🐶</div>
-</div>
-  }
-.character,.partner{
-  width:60px;
-  height:60px;
-  border-radius:50%;
-  position:absolute;
-  bottom:40px;
-  z-index:10;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:30px;
-  animation:bounce 2s infinite;
+  font-size:48px;
 }
-.character{left:70px;background:#90caf9;}
-.partner{left:200px;background:#f48fb1;}
-.pet{
-  width:40px;
-  height:40px;
-  border-radius:50%;
-  background:#a5d6a7;
-  position:absolute;
-  bottom:40px;
-  left:160px;
-  z-index:9;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-@keyframes bounce{
-  0%,100%{transform:translateY(0);}
-  50%{transform:translateY(-6px);}
-}
-@keyframes wiggle{
-  0%,100%{transform:rotate(0);}
-  50%{transform:rotate(8deg);}
-}
+
 #status{
   text-align:center;
   background:#f8bbd0;
   padding:6px;
-  font-size:13px;
+  font-size:14px;
 }
+
 footer{
   display:grid;
   grid-template-columns:repeat(4,1fr);
-  gap:4px;
+  gap:6px;
   padding:6px;
   background:#fce4ec;
 }
+
 button{
   border:none;
+  border-radius:10px;
   background:#ff5c8a;
   color:white;
-  border-radius:10px;
-  padding:7px;
-  font-size:11px;
-}
-#shop{
-  position:absolute;
-  inset:0;
-  background:rgba(255,240,245,.95);
-  display:none;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-}
-.shop-item{
-  background:white;
-  border-radius:12px;
-  padding:10px;
-  margin:6px;
-  width:80%;
-  text-align:center;
+  padding:8px;
+  font-size:12px;
 }
 </style>
 </head>
 
 <body>
-<div id="game">
+
+<div id="app">
+
 <header>Pocket Cozy Life</header>
 
 <div id="hud">
   <div>💰 <span id="money">100</span></div>
-  <div>❤️ <span id="love">50</span></div>
+  <div>❤️ <span id="love">75</span></div>
 </div>
 
 <div id="room">
-  <div class="character" id="player">😊</div>
-  <div class="partner">🥰</div>
-  <div class="pet">🐶</div>
-
-  <div id="shop">
-    <h3>🛒 Loja</h3>
-    <div class="shop-item">
-      <button onclick="buy('🛋️',20)">Sofá – 20💰</button>
-    </div>
-    <div class="shop-item">
-      <button onclick="buy('🪴',15)">Planta – 15💰</button>
-    </div>
-    <button onclick="closeShop()">Fechar</button>
-  </div>
+  <div id="player">😊</div>
+  <div id="partner">🥰</div>
+  <div id="pet">🐶</div>
 </div>
 
-<div id="status">Bem-vindo ao seu lar 💕</div>
+<div id="status">Você está na Cozinha</div>
 
 <footer>
-<button onclick="changeRoom()">Cômodo</button>
-<button onclick="openShop()">Loja</button>
-<button onclick="changeClothes()">Roupas</button>
-<button onclick="loveUp()">Amor</button>
-<button onclick="work()">Trabalhar</button>
-<button onclick="saveGame()">Salvar</button>
-<button onclick="story()">História</button>
-<button onclick="pet()">Pet</button>
+  <button onclick="changeRoom()">Cômodo</button>
+  <button onclick="work()">Trabalhar</button>
+  <button onclick="loveUp()">Amor</button>
+  <button onclick="addItem()">Mobília</button>
 </footer>
+
 </div>
 
 <script>
-let money=100,love=50,roomIndex=0;
+let money=100;
+let love=75;
+let roomIndex=0;
+
 const rooms=[
-  {name:'Quarto',color:'#ffeef5'},
-  {name:'Sala',color:'#e3f2fd'},
-  {name:'Cozinha',color:'#fff3e0'},
-  {name:'Jardim',color:'#e8f5e9'}
+  {name:"Cozinha",color:"#fff3e0"},
+  {name:"Sala",color:"#e3f2fd"},
+  {name:"Quarto",color:"#fce4ec"},
+  {name:"Jardim",color:"#e8f5e9"}
 ];
 
-function update(){
-  moneySpan.innerText=money;
-  loveSpan.innerText=love;
-}
-const moneySpan=document.getElementById('money');
-const loveSpan=document.getElementById('love');
-const room=document.getElementById('room');
-const status=document.getElementById('status');
+const room=document.getElementById("room");
+const status=document.getElementById("status");
+const moneySpan=document.getElementById("money");
+const loveSpan=document.getElementById("love");
 
 function changeRoom(){
-  roomIndex = (roomIndex + 1) % rooms.length;
-  room.style.background = rooms[roomIndex].color;
-  status.innerText = 'Você está no ' + rooms[roomIndex].name;
+  roomIndex=(roomIndex+1)%rooms.length;
+  room.style.background=rooms[roomIndex].color;
+  status.innerText="Você está na "+rooms[roomIndex].name;
 }
 
-function openShop(){document.getElementById('shop').style.display='flex';}
-function closeShop(){document.getElementById('shop').style.display='none';}
-
-function buy(item, price){
-  if(money >= price){
-    money -= price;
-
-    const deco = document.createElement("div");
-    deco.innerText = item;
-    deco.style.position = "absolute";
-    deco.style.bottom = "20px";
-    deco.style.left = Math.random()*250 + "px";
-    deco.style.fontSize = "30px";
-    room.appendChild(deco);
-
-    status.innerText = 'Você comprou ' + item;
-    closeShop();
-    update();
-  }
+function work(){
+  money+=20;
+  moneySpan.innerText=money;
+  status.innerText="Você trabalhou 💼";
 }
 
-function changeClothes(){
-  const looks=['😊','😎','🧑‍🎤','🧑‍🍳','🧑‍🌈'];
-  document.getElementById('player').innerText=
-    looks[Math.floor(Math.random()*looks.length)];
+function loveUp(){
+  love+=5;
+  loveSpan.innerText=love;
+  status.innerText="Momento fofo 💖";
 }
 
-function loveUp(){love+=5;status.innerText='Momento fofo 💖';update();}
-function work(){money+=20;status.innerText='Você trabalhou 💼';update();}
-function story(){love+=10;status.innerText='História avançou 📖';update();}
-function pet(){status.innerText='Pet feliz 🐾';}
-
-function saveGame(){
-  localStorage.setItem('cozySave',JSON.stringify({money,love,roomIndex}));
-  status.innerText='Jogo salvo 💾';
-}
-
-(function load(){
-  const s=JSON.parse(localStorage.getItem('cozySave'));
-  if(s){money=s.money;love=s.love;roomIndex=s.roomIndex;changeRoom();update();}
-})();
-
-//if('serviceWorker' in navigator){
- // navigator.serviceWorker.register('service-worker.js');
+function addItem(){
+  const item=document.createElement("div");
+  item.innerText="🛋️";
+  item.style.fontSize="32px";
+  room.appendChild(item);
+  status.innerText="Você colocou uma mobília";
 }
 </script>
+
 </body>
 </html>

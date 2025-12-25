@@ -35,31 +35,44 @@ header{
   background:#ffd1dc;
   padding:6px;
 }
-#room{
+  #room{
   flex:1;
   position:relative;
   transition:.4s;
+  min-height:300px;
+  background:#fff5e6;
+  overflow:hidden;
+  }
 }
 .character,.partner{
   width:60px;
   height:60px;
   border-radius:50%;
   position:absolute;
-  bottom:20px;
+  bottom:40px;
+  z-index:10;
   display:flex;
   align-items:center;
   justify-content:center;
   font-size:30px;
   animation:bounce 2s infinite;
 }
+}
 .character{left:70px;background:#90caf9;}
 .partner{left:200px;background:#f48fb1;}
 .pet{
-  width:40px;height:40px;border-radius:50%;
+  width:40px;
+  height:40px;
+  border-radius:50%;
   background:#a5d6a7;
-  position:absolute;bottom:20px;left:150px;
-  display:flex;align-items:center;justify-content:center;
-  animation:wiggle 3s infinite;
+  position:absolute;
+  bottom:40px;
+  left:160px;
+  z-index:9;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
 }
 @keyframes bounce{
   0%,100%{transform:translateY(0);}
@@ -169,19 +182,29 @@ const room=document.getElementById('room');
 const status=document.getElementById('status');
 
 function changeRoom(){
-  roomIndex=(roomIndex+1)%rooms.length;
-  room.style.background=rooms[roomIndex].color;
-  status.innerText='Você está no '+rooms[roomIndex].name;
+  roomIndex = (roomIndex + 1) % rooms.length;
+  room.style.background = rooms[roomIndex].color;
+  status.innerText = 'Você está no ' + rooms[roomIndex].name;
 }
 
 function openShop(){document.getElementById('shop').style.display='flex';}
 function closeShop(){document.getElementById('shop').style.display='none';}
 
-function buy(item,price){
-  if(money>=price){
-    money-=price;
-    status.innerText='Você comprou '+item;
-    closeShop();update();
+function buy(item, price){
+  if(money >= price){
+    money -= price;
+
+    const deco = document.createElement("div");
+    deco.innerText = item;
+    deco.style.position = "absolute";
+    deco.style.bottom = "20px";
+    deco.style.left = Math.random()*250 + "px";
+    deco.style.fontSize = "30px";
+    room.appendChild(deco);
+
+    status.innerText = 'Você comprou ' + item;
+    closeShop();
+    update();
   }
 }
 

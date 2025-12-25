@@ -39,11 +39,21 @@ header{
 #room{
   flex:1;
   background:#fff3e0;
-  display:flex;
-  align-items:flex-end;
-  justify-content:space-around;
-  padding-bottom:40px;
+  position:relative;
+  overflow:hidden;
+}
+
+.character{
+  position:absolute;
+  bottom:40px;
   font-size:48px;
+}
+
+#player{ left:40px; }
+#partner{ left:140px; }
+#pet{
+  left:240px;
+  font-size:36px;
 }
 
 #status{
@@ -84,9 +94,9 @@ button{
 </div>
 
 <div id="room">
-  <div id="player">😊</div>
-  <div id="partner">🥰</div>
-  <div id="pet">🐶</div>
+  <div id="player" class="character">😊</div>
+  <div id="partner" class="character">🥰</div>
+  <div id="pet" class="character">🐶</div>
 </div>
 
 <div id="status">Você está na Cozinha</div>
@@ -136,11 +146,14 @@ function loveUp(){
 }
 
 function addItem(){
-  const item=document.createElement("div");
-  item.innerText="🛋️";
-  item.style.fontSize="32px";
+  const item = document.createElement("div");
+  item.innerText = "🛋️";
+  item.style.position = "absolute";
+  item.style.bottom = "10px";
+  item.style.left = Math.random()*240 + "px";
+  item.style.fontSize = "32px";
   room.appendChild(item);
-  status.innerText="Você colocou uma mobília";
+  status.innerText = "Você colocou uma mobília 🛋️";
 }
 </script>
 

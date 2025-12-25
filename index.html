@@ -27,7 +27,7 @@ body{
   display:flex;
   flex-direction:column;
   border-radius:20px;
-  box-shadow:0 10px 30px rgba(0,0,0,0.1);
+  box-shadow:0 10px 30px rgba(0,0,0,0.15); /* Sombra mais forte */
   overflow:hidden;
 }
 
@@ -69,6 +69,7 @@ header{
   bottom:20px;
   font-size:60px;
   transition:left 0.5s ease-in-out;
+  z-index: 2; /* Sempre na frente da mobília */
 }
 
 #player{ left:60px; }
@@ -82,7 +83,6 @@ header{
   position:absolute;
   font-size:40px;
   cursor:pointer;
-  /* Garante que a mobília fique atrás dos personagens */
   z-index: 1; 
 }
 
@@ -122,73 +122,96 @@ button:active{
   transform:translateY(2px);
 }
 
-/* Estilos da Modal (Inventário e Loja) */
+/* Estilos da Modal (Inventário e Loja) - Melhorados */
 .modal {
   display: none;
   position: fixed;
-  z-index: 100; /* Alto z-index para ficar acima de tudo */
+  z-index: 100;
   left: 0;
   top: 0;
   width: 100%;
   height: 100%;
   overflow: auto;
-  background-color: rgba(0,0,0,0.5);
+  background-color: rgba(0,0,0,0.6);
 }
 
 .modal-content {
   background-color: #fff;
   margin: 10% auto;
-  padding: 20px;
+  padding: 25px;
   border-radius: 20px;
   width: 90%;
   max-width: 340px;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+  box-shadow: 0 5px 20px rgba(0,0,0,0.5);
 }
 
 .close-button {
   color: #aaa;
   float: right;
-  font-size: 28px;
+  font-size: 32px;
   font-weight: bold;
 }
-
 .close-button:hover,
 .close-button:focus {
   color: #000;
   text-decoration: none;
   cursor: pointer;
 }
+.modal h3 {
+    border-bottom: 2px solid #ffccd5;
+    padding-bottom: 5px;
+    margin-top: 20px;
+    font-size: 18px;
+    color: #ff6f91;
+}
 
-/* Estilo específico para lista de itens na modal */
+/* Estilo para Lista de Itens (Catálogo e Inventário) */
 .item-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Duas colunas para itens */
+  gap: 12px;
   padding: 10px 0;
+  max-height: 250px;
+  overflow-y: auto; /* Scroll para listas longas */
 }
 
-.item-list div {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px;
-  border-bottom: 1px solid #eee;
+.item-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px;
+    border: 1px solid #ffccd5;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 12px;
+    min-height: 120px;
 }
-.item-list div:last-child {
-  border-bottom: none;
+.item-card .icon {
+    font-size: 30px;
+    margin-bottom: 5px;
+}
+.item-card button {
+    margin-top: 5px;
+    padding: 6px 10px;
+    font-size: 11px;
+    width: 90%;
+}
+.item-card .equipped {
+    color: green;
+    font-weight: bold;
 }
 </style>
 </head>
 
-<body>
-
-<div id="app">
+<body onload="loadGame()"> <div id="app">
 
 <header>Pocket Cozy Life</header>
 
 <div id="hud">
   <div>💰 <span id="money">100</span></div>
   <div>❤️ <span id="love">75</span></div>
+  <button onclick="saveGame()" style="background:#ffb3c1;box-shadow:0 3px 0 #cf919d; font-size:12px;">💾 Salvar</button>
 </div>
 
 <div id="room">
@@ -198,7 +221,7 @@ button:active{
   <div id="pet" class="character">🐶</div>
 </div>
 
-<div id="status">Você está na Cozinha</div>
+<div id="status">Bem-vindo(a) ao Pocket Cozy Life!</div>
 
 <footer>
   <button onclick="changeRoom()">🏠 Cômodo</button>
@@ -206,7 +229,7 @@ button:active{
   <button onclick="loveUp()">💖 Amor</button>
   <button onclick="openShop()">🛍️ Loja</button>
   <button onclick="openInventory()">👕 Inventário</button>
-  <button onclick="addItemToRoom(SHOP_ITEMS.furniture[0])">🛋️ Colocar</button>
+  <button onclick="openPlaceFurniture()">🛋️ Colocar</button>
 </footer>
 
 </div>
@@ -214,10 +237,10 @@ button:active{
 <div id="inventoryModal" class="modal">
   <div class="modal-content">
     <span class="close-button" onclick="closeModal('inventoryModal')">&times;</span>
-    <h3>👕 Inventário de Roupas</h3>
+    <h3>👕 Suas Roupas (Skins)</h3>
     <div id="inventoryClothesList" class="item-list"></div>
-
-    <h3>🛋️ Mobília Colocada</h3>
+    
+    <h3>🛋️ Mobília na Sala</h3>
     <div id="inventoryFurnitureList" class="item-list"></div>
   </div>
 </div>
@@ -235,27 +258,37 @@ button:active{
   </div>
 </div>
 
-<script>
-// --- Variáveis Globais ---
-let money=100;
-let love=75;
-let roomIndex=0;
-let furnitureItems = []; // Array para rastrear a mobília colocada
-let playerSkinIndex = 0;
-let partnerSkinIndex = 0;
-let petSkinIndex = 0;
+<div id="placeModal" class="modal">
+  <div class="modal-content">
+    <span class="close-button" onclick="closeModal('placeModal')">&times;</span>
+    <h3>🛋️ Mobília para Colocar</h3>
+    <p>Itens que você possui e pode colocar na sala:</p>
+    <div id="placeFurnitureList" class="item-list"></div>
+  </div>
+</div>
 
-// Itens possuídos (Inicialmente apenas os skins base)
+<script>
+// --- Variáveis Globais (Valores Padrão) ---
+let money = 100;
+let love = 75;
+let roomIndex = 0;
+let furnitureItems = []; // Mobília colocada na sala (elementos HTML)
+
+// Estado da Customização
+let playerSkinId = 0;
+let partnerSkinId = 0;
+let petSkinId = 0;
+
+// Itens possuídos (IDs dos catálogos)
 let ownedSkins = {
-    player: [0],
+    player: [0], // 0 é o default
     partner: [0],
     pet: [0]
 };
-let ownedFurniture = {}; // Mobília comprada, mas NÃO colocada na sala
+let ownedFurniture = []; // Chaves da mobília que pode ser colocada
 
 // --- Catálogo de Itens ---
 const SHOP_ITEMS = {
-    // Lista de Roupas/Skins
     skins: [
         { char: 'player', id: 0, icon: "😊", name: "Padrão", price: 0 },
         { char: 'partner', id: 0, icon: "🥰", name: "Padrão", price: 0 },
@@ -273,7 +306,6 @@ const SHOP_ITEMS = {
         { char: 'pet', id: 2, icon: "🐰", name: "Coelhinho", price: 60 },
         { char: 'pet', id: 3, icon: "🐻", name: "Ursinho", price: 100 },
     ],
-    // Lista de Mobília (icon: O emoji, key: Identificador único, price: Preço)
     furniture: [
         { icon: "🛋️", key: "sofa_red", name: "Sofá Vermelho", price: 50 },
         { icon: "🪑", key: "chair_wood", name: "Cadeira de Madeira", price: 30 },
@@ -282,14 +314,6 @@ const SHOP_ITEMS = {
         { icon: "📺", key: "tv_flat", name: "Televisão", price: 150 },
     ]
 };
-
-// --- Configurações do Jogo ---
-const rooms=[
-  {name:"Cozinha", color:"#fff3e0"},
-  {name:"Sala", color:"#e3f2fd"},
-  {name:"Quarto", color:"#fce4ec"},
-  {name:"Jardim", color:"#e8f5e9"}
-];
 
 // --- Elementos DOM ---
 const room=document.getElementById("room");
@@ -300,21 +324,110 @@ const furnitureContainer = document.getElementById("furniture-container");
 const playerChar = document.getElementById("player");
 const partnerChar = document.getElementById("partner");
 const petChar = document.getElementById("pet");
-const shopModal = document.getElementById("shopModal");
-const inventoryModal = document.getElementById("inventoryModal");
+
+// --- Funções de Estado e Salvar/Carregar ---
+
+function updateDisplay() {
+    moneySpan.innerText = money;
+    loveSpan.innerText = love;
+    
+    // Atualiza o estado da sala (cor e nome)
+    room.style.background = rooms[roomIndex].color;
+    status.innerText = `Você está na ${rooms[roomIndex].name}`;
+
+    // Atualiza a aparência dos personagens
+    playerChar.innerText = SHOP_ITEMS.skins.find(s => s.char === 'player' && s.id === playerSkinId)?.icon || '😊';
+    partnerChar.innerText = SHOP_ITEMS.skins.find(s => s.char === 'partner' && s.id === partnerSkinId)?.icon || '🥰';
+    petChar.innerText = SHOP_ITEMS.skins.find(s => s.char === 'pet' && s.id === petSkinId)?.icon || '🐶';
+}
+
+function saveGame() {
+    const gameState = {
+        money,
+        love,
+        roomIndex,
+        playerSkinId,
+        partnerSkinId,
+        petSkinId,
+        ownedSkins,
+        ownedFurniture,
+        // Mobília na sala (salva apenas os dados para recriar, não o elemento HTML)
+        placedFurnitureData: furnitureItems.map(item => ({
+            key: item.key,
+            bottom: item.element.style.bottom,
+            left: item.element.style.left
+        }))
+    };
+    
+    try {
+        localStorage.setItem('pocketCozyLifeSave', JSON.stringify(gameState));
+        status.innerText = "✅ Jogo Salvo com Sucesso!";
+    } catch (e) {
+        status.innerText = "❌ Erro ao salvar o jogo.";
+        console.error("Save error:", e);
+    }
+}
+
+function loadGame() {
+    try {
+        const savedData = localStorage.getItem('pocketCozyLifeSave');
+        if (savedData) {
+            const gameState = JSON.parse(savedData);
+            
+            // Carrega variáveis principais
+            money = gameState.money;
+            love = gameState.love;
+            roomIndex = gameState.roomIndex;
+
+            // Carrega customização
+            playerSkinId = gameState.playerSkinId;
+            partnerSkinId = gameState.partnerSkinId;
+            petSkinId = gameState.petSkinId;
+            ownedSkins = gameState.ownedSkins;
+            ownedFurniture = gameState.ownedFurniture;
+
+            // Limpa a sala e recria a mobília
+            furnitureContainer.innerHTML = '';
+            furnitureItems = [];
+            gameState.placedFurnitureData.forEach(data => {
+                const item = SHOP_ITEMS.furniture.find(f => f.key === data.key);
+                if (item) {
+                    recreateFurniture(item, data.bottom, data.left);
+                }
+            });
+
+            updateDisplay();
+            status.innerText = "✅ Jogo Carregado!";
+        } else {
+            updateDisplay();
+        }
+    } catch (e) {
+        status.innerText = "❌ Erro ao carregar o jogo. Iniciando novo jogo.";
+        console.error("Load error:", e);
+        updateDisplay();
+    }
+}
 
 
 // --- Funções Principais do Jogo ---
 
+const rooms=[
+  {name:"Cozinha", color:"#fff3e0"},
+  {name:"Sala", color:"#e3f2fd"},
+  {name:"Quarto", color:"#fce4ec"},
+  {name:"Jardim", color:"#e8f5e9"}
+];
+
 function changeRoom(){
   roomIndex=(roomIndex+1)%rooms.length;
-  room.style.background=rooms[roomIndex].color;
-  status.innerText="Você está na "+rooms[roomIndex].name;
+  updateDisplay();
+  saveGame();
 }
 
 function updateMoney(amount){
     money += amount;
-    moneySpan.innerText = money;
+    updateDisplay();
+    saveGame();
 }
 
 function work(){
@@ -324,33 +437,50 @@ function work(){
 
 function loveUp(){
   love+=5;
-  loveSpan.innerText=love;
+  updateDisplay();
   status.innerText="Momento fofo 💖 (+5 Love)";
 }
 
-// Coloca um item de mobília na sala (não precisa de inventário para isso agora)
-function addItemToRoom(item){
-    // Este item é o item da lista SHOP_ITEMS.furniture
+// Recria um item de mobília na sala com base em dados salvos
+function recreateFurniture(item, bottom, left) {
     const itemElement = document.createElement("div");
     itemElement.innerText = item.icon;
     itemElement.classList.add("furniture-item");
     
-    // Posição aleatória
-    itemElement.style.bottom = Math.floor(Math.random() * 50) + 10 + "px"; 
-    itemElement.style.left = Math.floor(Math.random() * 260) + 20 + "px"; 
+    itemElement.style.bottom = bottom;
+    itemElement.style.left = left; 
 
     furnitureContainer.appendChild(itemElement);
     
-    // Rastreamento da mobília colocada
     furnitureItems.push({
-        id: Date.now(), // ID único
+        id: Date.now() + Math.random(), // ID único
         key: item.key,
         name: item.name,
         icon: item.icon,
         element: itemElement 
     });
+}
 
+// Coloca um item de mobília na sala (a partir da Place Modal)
+function addItemToRoom(key){
+    const item = SHOP_ITEMS.furniture.find(f => f.key === key);
+    if (!item) return;
+
+    // Remove o item da lista de posse para "colocar" (se você quiser rastrear estoque)
+    const indexInOwned = ownedFurniture.indexOf(key);
+    if (indexInOwned > -1) {
+         // Se quiser rastrear o estoque de móveis, remova aqui:
+         // ownedFurniture.splice(indexInOwned, 1);
+    }
+    
+    // Posição aleatória (como antes)
+    const bottom = Math.floor(Math.random() * 50) + 10 + "px"; 
+    const left = Math.floor(Math.random() * 260) + 20 + "px"; 
+    
+    recreateFurniture(item, bottom, left);
+    closeModal('placeModal');
     status.innerText = `Mobília colocada: ${item.name} ${item.icon}`;
+    saveGame();
 }
 
 
@@ -379,28 +509,32 @@ function updateShopList() {
     shopFurnitureList.innerHTML = '';
 
     // Roupas
-    SHOP_ITEMS.skins.forEach(item => {
-        // Ignora skins padrão (id=0) para compra
-        if(item.id === 0) return; 
-
+    SHOP_ITEMS.skins.filter(item => item.id !== 0).forEach(item => {
         const isOwned = ownedSkins[item.char].includes(item.id);
-        const div = document.createElement("div");
-        div.innerHTML = `${item.icon} ${item.name} (${item.char})`;
+        const card = document.createElement("div");
+        card.classList.add("item-card");
+
+        card.innerHTML = `<span class="icon">${item.icon}</span>`;
+        card.innerHTML += `<p>${item.name} (${item.char === 'player' ? 'Você' : item.char === 'partner' ? 'Parceiro' : 'Pet'})</p>`;
         
         if (isOwned) {
-            div.innerHTML += `<span>✔️ Possuído</span>`;
+            card.innerHTML += `<button style="background:#4CAF50; box-shadow:0 3px 0 #388E3C;">✔️ Possuído</button>`;
         } else {
-            div.innerHTML += `<span>💰 ${item.price} <button onclick="buyItem('skin', '${item.char}', ${item.id}, ${item.price})">Comprar</button></span>`;
+            card.innerHTML += `<button onclick="buyItem('skin', '${item.char}', ${item.id}, ${item.price})">💰 ${item.price}</button>`;
         }
-        shopClothesList.appendChild(div);
+        shopClothesList.appendChild(card);
     });
 
-    // Mobília (A mobília é infinita e não rastreamos o estoque por simplicidade)
+    // Mobília (A mobília é comprada e armazenada no inventário 'ownedFurniture')
     SHOP_ITEMS.furniture.forEach(item => {
-        const div = document.createElement("div");
-        div.innerHTML = `${item.icon} ${item.name}`;
-        div.innerHTML += `<span>💰 ${item.price} <button onclick="buyItem('furniture', '${item.key}', ${item.key}, ${item.price})">Comprar</button></span>`;
-        shopFurnitureList.appendChild(div);
+        const card = document.createElement("div");
+        card.classList.add("item-card");
+
+        card.innerHTML = `<span class="icon">${item.icon}</span>`;
+        card.innerHTML += `<p>${item.name}</p>`;
+        card.innerHTML += `<button onclick="buyItem('furniture', '${item.key}', null, ${item.price})">💰 ${item.price}</button>`;
+        
+        shopFurnitureList.appendChild(card);
     });
 }
 
@@ -410,126 +544,144 @@ function buyItem(type, key, id, price) {
         return;
     }
 
-    updateMoney(-price);
+    updateMoney(-price); // Já chama saveGame()
     
     if (type === 'skin') {
-        // Adiciona a skin comprada ao inventário de posse
         const skinItem = SHOP_ITEMS.skins.find(s => s.char === key && s.id === id);
         if (skinItem && !ownedSkins[key].includes(id)) {
             ownedSkins[key].push(id);
             status.innerText = `✅ Você comprou: ${skinItem.name} ${skinItem.icon}!`;
-            updateShopList(); // Atualiza a loja para mostrar que foi comprado
+            updateShopList(); // Atualiza a loja
         }
     } else if (type === 'furniture') {
-        // Mobília comprada (adicione ao estoque de mobília que pode ser colocada)
         const furnitureItem = SHOP_ITEMS.furniture.find(f => f.key === key);
         if (furnitureItem) {
-            // Apenas para simular a compra, você pode querer adicionar ao 'ownedFurniture' aqui
+            ownedFurniture.push(key); // Adiciona ao estoque de mobília que pode ser colocada
             status.innerText = `✅ Você comprou: ${furnitureItem.name} ${furnitureItem.icon}! Agora coloque-a na sala.`;
         }
     }
     
-    // Fecha a loja e atualiza o status
     closeModal('shopModal');
+    saveGame();
 }
 
 // --- Funções de Inventário (Customização) ---
 
 function openInventory() {
-    updateInventoryList();
+    updateInventoryClothesList();
+    updateInventoryFurnitureList();
     openModal('inventoryModal');
 }
 
-function updateInventoryList() {
+function updateInventoryClothesList() {
     const invClothesList = document.getElementById("inventoryClothesList");
-    const invFurnitureList = document.getElementById("inventoryFurnitureList");
-    
     invClothesList.innerHTML = '';
-    invFurnitureList.innerHTML = '';
 
-    // 1. Lista de Roupas Compradas (Skins)
+    // Lista de Roupas Compradas (Skins)
     ['player', 'partner', 'pet'].forEach(char => {
-        const charName = char.charAt(0).toUpperCase() + char.slice(1);
-        
         ownedSkins[char].forEach(skinId => {
             const skinItem = SHOP_ITEMS.skins.find(s => s.char === char && s.id === skinId);
             if (!skinItem) return;
 
-            const isEquipped = (char === 'player' && playerSkinIndex === skinId) ||
-                               (char === 'partner' && partnerSkinIndex === skinId) ||
-                               (char === 'pet' && petSkinIndex === skinId);
+            const isEquipped = (char === 'player' && playerSkinId === skinId) ||
+                               (char === 'partner' && partnerSkinId === skinId) ||
+                               (char === 'pet' && petSkinId === skinId);
 
-            const div = document.createElement("div");
-            div.innerHTML = `${skinItem.icon} ${skinItem.name} (${charName})`;
+            const card = document.createElement("div");
+            card.classList.add("item-card");
+            card.innerHTML = `<span class="icon">${skinItem.icon}</span>`;
+            card.innerHTML += `<p>${skinItem.name}</p>`;
             
             if (isEquipped) {
-                div.innerHTML += `<span>✅ Vestindo</span>`;
+                card.innerHTML += `<span class="equipped">✅ Vestindo</span>`;
             } else {
-                div.innerHTML += `<span><button onclick="changeSkin('${char}', ${skinId})">Vestir</button></span>`;
+                card.innerHTML += `<span><button onclick="changeSkin('${char}', ${skinId})">Vestir</button></span>`;
             }
-            invClothesList.appendChild(div);
+            invClothesList.appendChild(card);
         });
     });
+}
 
-    // 2. Mobília Colocada na Sala
+function updateInventoryFurnitureList() {
+    const invFurnitureList = document.getElementById("inventoryFurnitureList");
+    invFurnitureList.innerHTML = '';
+    
+    // Mobília Colocada na Sala
     if(furnitureItems.length > 0){
         furnitureItems.forEach(item => {
-            const div = document.createElement("div");
-            div.innerHTML = `${item.icon} ${item.name} (${rooms[roomIndex].name})`;
-            div.innerHTML += `<span><button onclick="removeItem(${item.id})">Remover</button></span>`;
-            invFurnitureList.appendChild(div);
+            const card = document.createElement("div");
+            card.classList.add("item-card");
+            card.innerHTML = `<span class="icon">${item.icon}</span>`;
+            card.innerHTML += `<p>${item.name}</p>`;
+            card.innerHTML += `<span><button onclick="removeItem(${item.id})">Remover</button></span>`;
+            invFurnitureList.appendChild(card);
         });
     } else {
-         invFurnitureList.innerHTML = '<p>Nenhuma mobília na sala.</p>';
+         invFurnitureList.innerHTML = '<p style="grid-column: 1 / span 2; text-align: center;">Nenhuma mobília na sala.</p>';
     }
 }
 
-// Troca a skin do personagem e atualiza o display
+// Troca a skin do personagem e salva
 function changeSkin(char, id) {
     const skinItem = SHOP_ITEMS.skins.find(s => s.char === char && s.id === id);
     if (!skinItem) return;
 
     if (char === 'player') {
-        playerChar.innerText = skinItem.icon;
-        playerSkinIndex = id;
+        playerSkinId = id;
     } else if (char === 'partner') {
-        partnerChar.innerText = skinItem.icon;
-        partnerSkinIndex = id;
+        partnerSkinId = id;
     } else if (char === 'pet') {
-        petChar.innerText = skinItem.icon;
-        petSkinIndex = id;
+        petSkinId = id;
     }
     
     status.innerText = `Skin de ${char} alterada para ${skinItem.name} ${skinItem.icon}!`;
-    updateInventoryList(); // Atualiza a lista para refletir a skin vestida
-    closeModal('inventoryModal');
+    updateDisplay();
+    updateInventoryClothesList(); // Atualiza a modal do inventário
+    saveGame();
 }
 
-// Remove um item de mobília da sala
+// Remove um item de mobília da sala e salva
 function removeItem(id) {
     const itemIndex = furnitureItems.findIndex(item => item.id === id);
     if(itemIndex > -1) {
-        // Remove do DOM
         furnitureItems[itemIndex].element.remove();
-        // Remove do array de rastreamento
         furnitureItems.splice(itemIndex, 1); 
         status.innerText = "Mobília removida da sala!";
-        updateInventoryList(); 
+        updateInventoryFurnitureList(); 
+        saveGame();
     }
 }
 
+// --- Funções de Colocar Mobília ---
 
-// --- Inicialização ---
-// Fecha as modais se o usuário clicar fora delas
-window.onclick = function(event) {
-    if (event.target == inventoryModal) {
-        closeModal('inventoryModal');
-    }
-    if (event.target == shopModal) {
-        closeModal('shopModal');
-    }
+function openPlaceFurniture() {
+    updatePlaceFurnitureList();
+    openModal('placeModal');
 }
-</script>
 
-</body>
-</html>
+function updatePlaceFurnitureList() {
+    const placeFurnitureList = document.getElementById("placeFurnitureList");
+    placeFurnitureList.innerHTML = '';
+    
+    // Rastreia itens únicos que o usuário possui
+    const uniqueOwnedFurniture = [...new Set(ownedFurniture)]; 
+    
+    if (uniqueOwnedFurniture.length > 0) {
+        uniqueOwnedFurniture.forEach(key => {
+            const item = SHOP_ITEMS.furniture.find(f => f.key === key);
+            if (!item) return;
+            
+            // Conta quantas cópias deste item o usuário possui
+            const count = ownedFurniture.filter(k => k === key).length; 
+
+            const card = document.createElement("div");
+            card.classList.add("item-card");
+            card.innerHTML = `<span class="icon">${item.icon}</span>`;
+            // Não exibimos a contagem, pois o objetivo é ter várias cópias (como em Pocket Love)
+            card.innerHTML += `<p>${item.name}</p>`; 
+            card.innerHTML += `<span><button onclick="addItemToRoom('${key}')">Colocar</button></span>`;
+            
+            placeFurnitureList.appendChild(card);
+        });
+    } else {
+         placeFurnitureList.

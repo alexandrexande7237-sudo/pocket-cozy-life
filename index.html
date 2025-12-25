@@ -4,81 +4,161 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pocket Cozy Life</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 
 <style>
+/* Estilos Globais e Reset */
 body{
   margin:0;
-  background:#fce4ec;
-  font-family:Arial, sans-serif;
+  background:#f4f4f4; /* Fundo leve */
+  font-family:'Poppins', Arial, sans-serif;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
 }
 
 #app{
   max-width:360px;
-  height:100vh;
+  width:100%;
+  height:800px; /* Altura ajustada para telas maiores */
   margin:auto;
   background:#fff;
   display:flex;
   flex-direction:column;
+  border-radius:20px; /* Bordas arredondadas do app */
+  box-shadow:0 10px 30px rgba(0,0,0,0.1);
+  overflow:hidden;
 }
 
 header{
-  background:#ff8fab;
-  color:white;
+  background:#ffb3c1; /* Tom de rosa mais suave */
+  color:#fff;
   text-align:center;
-  padding:10px;
-  font-size:18px;
+  padding:15px;
+  font-size:22px;
+  font-weight:700;
+  box-shadow:0 2px 5px rgba(0,0,0,0.1);
 }
 
 #hud{
   display:flex;
   justify-content:space-around;
-  background:#ffd1dc;
-  padding:6px;
+  background:#ffccd5; /* Rosa mais claro */
+  padding:10px;
+  font-weight:600;
+  font-size:16px;
+}
+
+#hud div{
+  background:#fff;
+  padding:5px 10px;
+  border-radius:15px;
+  box-shadow:inset 0 1px 3px rgba(0,0,0,0.1);
 }
 
 #room{
   flex:1;
-  background:#fff3e0;
+  background:#fff3e0; /* Cor padrão da Cozinha */
   position:relative;
   overflow:hidden;
 }
 
+/* Estilo para os personagens (chibi/maior) */
 .character{
   position:absolute;
-  bottom:40px;
-  font-size:48px;
+  bottom:20px; /* Mais perto do chão */
+  font-size:60px; /* Maior, estilo chibi */
+  transition:left 0.5s ease-in-out;
 }
 
-#player{ left:40px; }
-#partner{ left:140px; }
+#player{ left:60px; }
+#partner{ left:180px; }
 #pet{
-  left:240px;
-  font-size:36px;
+  left:280px;
+  font-size:45px;
 }
+
+.furniture-item{
+  position:absolute;
+  font-size:40px;
+  cursor:pointer; /* Indica que pode ser interagido/movido */
+}
+
 
 #status{
   text-align:center;
   background:#f8bbd0;
-  padding:6px;
-  font-size:14px;
+  color:#444;
+  padding:8px;
+  font-size:16px;
+  font-weight:600;
 }
 
 footer{
   display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:6px;
-  padding:6px;
-  background:#fce4ec;
+  /* Mudança para 3 colunas para um layout mais limpo, e adicionamos uma linha para mais botões */
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+  padding:10px;
+  background:#ffe8e8; /* Fundo suave para o menu */
 }
 
 button{
   border:none;
-  border-radius:10px;
-  background:#ff5c8a;
+  border-radius:15px; /* Botões bem arredondados */
+  background:#ff6f91; /* Rosa forte */
   color:white;
-  padding:8px;
-  font-size:12px;
+  padding:12px 8px;
+  font-size:14px;
+  font-weight:600;
+  cursor:pointer;
+  box-shadow:0 3px 0 #d94b6f; /* Sombra para parecer 3D/pressionável */
+  transition:all 0.1s;
 }
+
+button:active{
+  box-shadow:0 1px 0 #d94b6f;
+  transform:translateY(2px);
+}
+
+/* Estilos da Modal/Inventário (Novo) */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 10;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+  background-color: #fff;
+  margin: 15% auto;
+  padding: 20px;
+  border-radius: 20px;
+  width: 80%;
+  max-width: 320px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.close-button {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.close-button:hover,
+.close-button:focus {
+  color: #000;
+  text-decoration: none;
+  cursor: pointer;
+}
+
 </style>
 </head>
 
@@ -94,6 +174,7 @@ button{
 </div>
 
 <div id="room">
+  <div id="furniture-container"></div>
   <div id="player" class="character">😊</div>
   <div id="partner" class="character">🥰</div>
   <div id="pet" class="character">🐶</div>
@@ -102,30 +183,61 @@ button{
 <div id="status">Você está na Cozinha</div>
 
 <footer>
-  <button onclick="changeRoom()">Cômodo</button>
-  <button onclick="work()">Trabalhar</button>
-  <button onclick="loveUp()">Amor</button>
-  <button onclick="addItem()">Mobília</button>
+  <button onclick="changeRoom()">🏠 Cômodo</button>
+  <button onclick="work()">💼 Trabalhar</button>
+  <button onclick="loveUp()">💖 Amor</button>
+  <button onclick="addItem('Sofa')">🛋️ Mobília</button>
+  <button onclick="openInventory()">🛍️ Inventário</button>
+  <button onclick="changeColor()">🎨 Cor</button>
 </footer>
 
 </div>
 
+<div id="inventoryModal" class="modal">
+  <div class="modal-content">
+    <span class="close-button" onclick="closeInventory()">&times;</span>
+    <h3>🛍️ Inventário</h3>
+    <p>Aqui você verá suas roupas e mobílias.</p>
+    <div id="inventoryList">
+      </div>
+  </div>
+</div>
+
 <script>
+// --- Variáveis Globais ---
 let money=100;
 let love=75;
 let roomIndex=0;
+let furnitureItems = []; // Array para rastrear a mobília
 
+// --- Configurações do Jogo ---
 const rooms=[
-  {name:"Cozinha",color:"#fff3e0"},
-  {name:"Sala",color:"#e3f2fd"},
-  {name:"Quarto",color:"#fce4ec"},
-  {name:"Jardim",color:"#e8f5e9"}
+  {name:"Cozinha", color:"#fff3e0"}, // Creme
+  {name:"Sala", color:"#e3f2fd"},   // Azul Claro
+  {name:"Quarto", color:"#fce4ec"},  // Rosa Bebê
+  {name:"Jardim", color:"#e8f5e9"}  // Verde Menta
 ];
 
+const clothes = {
+  player: ["😊", "😎", "😇"],
+  partner: ["🥰", "😍", "😘"],
+  pet: ["🐶", "🐱", "🐰"]
+}
+
+// --- Elementos DOM ---
+const app=document.getElementById("app");
 const room=document.getElementById("room");
 const status=document.getElementById("status");
 const moneySpan=document.getElementById("money");
 const loveSpan=document.getElementById("love");
+const furnitureContainer = document.getElementById("furniture-container");
+const playerChar = document.getElementById("player");
+const partnerChar = document.getElementById("partner");
+const petChar = document.getElementById("pet");
+const inventoryModal = document.getElementById("inventoryModal");
+
+
+// --- Funções Principais do Jogo ---
 
 function changeRoom(){
   roomIndex=(roomIndex+1)%rooms.length;
@@ -145,16 +257,125 @@ function loveUp(){
   status.innerText="Momento fofo 💖";
 }
 
-function addItem(){
+function addItem(type){
+  const itemIcon = type === 'Sofa' ? "🛋️" : "🖼️";
   const item = document.createElement("div");
-  item.innerText = "🛋️";
-  item.style.position = "absolute";
-  item.style.bottom = "10px";
-  item.style.left = Math.random()*240 + "px";
-  item.style.fontSize = "32px";
-  room.appendChild(item);
-  status.innerText = "Você colocou uma mobília 🛋️";
+  item.innerText = itemIcon;
+  item.classList.add("furniture-item");
+  
+  // Posição aleatória na parte inferior do cômodo
+  item.style.bottom = Math.floor(Math.random() * 50) + 10 + "px"; // Entre 10px e 60px
+  item.style.left = Math.floor(Math.random() * 260) + 20 + "px"; // Entre 20px e 280px
+
+  furnitureContainer.appendChild(item);
+  
+  // Adiciona ao rastreamento para o inventário
+  furnitureItems.push({
+    id: Date.now(), // ID único
+    type: type,
+    icon: itemIcon,
+    element: item // Referência ao elemento HTML
+  });
+
+  status.innerText = "Você colocou uma mobília ("+type+") "+itemIcon;
 }
+
+
+// --- Funções de Customização e Inventário (BASE) ---
+
+// Função de exemplo: Mudar a cor do fundo do app/cor do tema
+function changeColor(){
+  // Exemplo de como você faria a troca de cor/tema
+  const newColor = prompt("Digite uma cor de fundo (Ex: #ffd1dc):");
+  if(newColor){
+    app.style.backgroundColor = newColor;
+    status.innerText = "Cor de fundo do app mudada!";
+  }
+}
+
+// Abre a modal do inventário
+function openInventory() {
+  inventoryModal.style.display = "block";
+  updateInventoryList();
+}
+
+// Fecha a modal do inventário
+function closeInventory() {
+  inventoryModal.style.display = "none";
+}
+
+// Atualiza a lista de itens no inventário
+function updateInventoryList() {
+  const inventoryList = document.getElementById("inventoryList");
+  inventoryList.innerHTML = '<h4>Roupas/Skins</h4>';
+
+  // Exemplo de lista de roupas (apenas para o jogador)
+  clothes.player.forEach((skin, index) => {
+    const skinDiv = document.createElement("div");
+    skinDiv.innerHTML = `${skin} <button onclick="changeSkin('player', ${index})">Vestir</button>`;
+    inventoryList.appendChild(skinDiv);
+  });
+  
+  inventoryList.innerHTML += '<h4>Mobília</h4>';
+
+  // Lista de mobília colocada na sala
+  if(furnitureItems.length > 0){
+    furnitureItems.forEach(item => {
+      const itemDiv = document.createElement("div");
+      // Você precisaria de uma função para 'remover' e 'mover' aqui
+      itemDiv.innerHTML = `${item.icon} ${item.type} <button onclick="removeItem(${item.id})">Remover</button>`;
+      inventoryList.appendChild(itemDiv);
+    });
+  } else {
+     inventoryList.innerHTML += '<p>Nenhuma mobília no momento.</p>';
+  }
+}
+
+// Troca a skin do personagem (BASE)
+function changeSkin(char, index) {
+  let target;
+  let skins;
+  if (char === 'player') {
+    target = playerChar;
+    skins = clothes.player;
+  } else if (char === 'partner') {
+    target = partnerChar;
+    skins = clothes.partner;
+  } else if (char === 'pet') {
+    target = petChar;
+    skins = clothes.pet;
+  }
+  
+  if (target && skins) {
+    target.innerText = skins[index];
+    status.innerText = `Skin de ${char} alterada!`;
+    closeInventory();
+  }
+}
+
+// Remove um item de mobília da sala (BASE)
+function removeItem(id) {
+  // Encontra o item
+  const itemIndex = furnitureItems.findIndex(item => item.id === id);
+  if(itemIndex > -1) {
+    // Remove do DOM
+    furnitureItems[itemIndex].element.remove();
+    // Remove do array de rastreamento
+    furnitureItems.splice(itemIndex, 1); 
+    status.innerText = "Mobília removida da sala!";
+    // Atualiza a lista do inventário
+    updateInventoryList(); 
+  }
+}
+
+// --- Inicialização ---
+// Fecha a modal se o usuário clicar fora dela
+window.onclick = function(event) {
+  if (event.target == inventoryModal) {
+    inventoryModal.style.display = "none";
+  }
+}
+
 </script>
 
 </body>

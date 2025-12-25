@@ -10,7 +10,7 @@
 /* Estilos Globais e Reset */
 body{
   margin:0;
-  background:#f4f4f4; /* Fundo leve */
+  background:#f4f4f4;
   font-family:'Poppins', Arial, sans-serif;
   display:flex;
   justify-content:center;
@@ -21,18 +21,18 @@ body{
 #app{
   max-width:360px;
   width:100%;
-  height:800px; /* Altura ajustada para telas maiores */
+  height:800px;
   margin:auto;
   background:#fff;
   display:flex;
   flex-direction:column;
-  border-radius:20px; /* Bordas arredondadas do app */
+  border-radius:20px;
   box-shadow:0 10px 30px rgba(0,0,0,0.1);
   overflow:hidden;
 }
 
 header{
-  background:#ffb3c1; /* Tom de rosa mais suave */
+  background:#ffb3c1;
   color:#fff;
   text-align:center;
   padding:15px;
@@ -44,7 +44,7 @@ header{
 #hud{
   display:flex;
   justify-content:space-around;
-  background:#ffccd5; /* Rosa mais claro */
+  background:#ffccd5;
   padding:10px;
   font-weight:600;
   font-size:16px;
@@ -59,16 +59,15 @@ header{
 
 #room{
   flex:1;
-  background:#fff3e0; /* Cor padrão da Cozinha */
+  background:#fff3e0;
   position:relative;
   overflow:hidden;
 }
 
-/* Estilo para os personagens (chibi/maior) */
 .character{
   position:absolute;
-  bottom:20px; /* Mais perto do chão */
-  font-size:60px; /* Maior, estilo chibi */
+  bottom:20px;
+  font-size:60px;
   transition:left 0.5s ease-in-out;
 }
 
@@ -82,7 +81,9 @@ header{
 .furniture-item{
   position:absolute;
   font-size:40px;
-  cursor:pointer; /* Indica que pode ser interagido/movido */
+  cursor:pointer;
+  /* Garante que a mobília fique atrás dos personagens */
+  z-index: 1; 
 }
 
 
@@ -97,23 +98,22 @@ header{
 
 footer{
   display:grid;
-  /* Mudança para 3 colunas para um layout mais limpo, e adicionamos uma linha para mais botões */
   grid-template-columns:repeat(3,1fr);
   gap:8px;
   padding:10px;
-  background:#ffe8e8; /* Fundo suave para o menu */
+  background:#ffe8e8;
 }
 
 button{
   border:none;
-  border-radius:15px; /* Botões bem arredondados */
-  background:#ff6f91; /* Rosa forte */
+  border-radius:15px;
+  background:#ff6f91;
   color:white;
   padding:12px 8px;
   font-size:14px;
   font-weight:600;
   cursor:pointer;
-  box-shadow:0 3px 0 #d94b6f; /* Sombra para parecer 3D/pressionável */
+  box-shadow:0 3px 0 #d94b6f;
   transition:all 0.1s;
 }
 
@@ -122,27 +122,27 @@ button:active{
   transform:translateY(2px);
 }
 
-/* Estilos da Modal/Inventário (Novo) */
+/* Estilos da Modal (Inventário e Loja) */
 .modal {
   display: none;
   position: fixed;
-  z-index: 10;
+  z-index: 100; /* Alto z-index para ficar acima de tudo */
   left: 0;
   top: 0;
   width: 100%;
   height: 100%;
   overflow: auto;
-  background-color: rgba(0,0,0,0.4);
+  background-color: rgba(0,0,0,0.5);
 }
 
 .modal-content {
   background-color: #fff;
-  margin: 15% auto;
+  margin: 10% auto;
   padding: 20px;
   border-radius: 20px;
-  width: 80%;
-  max-width: 320px;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+  width: 90%;
+  max-width: 340px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.4);
 }
 
 .close-button {
@@ -159,6 +159,24 @@ button:active{
   cursor: pointer;
 }
 
+/* Estilo específico para lista de itens na modal */
+.item-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 0;
+}
+
+.item-list div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  border-bottom: 1px solid #eee;
+}
+.item-list div:last-child {
+  border-bottom: none;
+}
 </style>
 </head>
 
@@ -186,20 +204,34 @@ button:active{
   <button onclick="changeRoom()">🏠 Cômodo</button>
   <button onclick="work()">💼 Trabalhar</button>
   <button onclick="loveUp()">💖 Amor</button>
-  <button onclick="addItem('Sofa')">🛋️ Mobília</button>
-  <button onclick="openInventory()">🛍️ Inventário</button>
-  <button onclick="changeColor()">🎨 Cor</button>
+  <button onclick="openShop()">🛍️ Loja</button>
+  <button onclick="openInventory()">👕 Inventário</button>
+  <button onclick="addItemToRoom(SHOP_ITEMS.furniture[0])">🛋️ Colocar</button>
 </footer>
 
 </div>
 
 <div id="inventoryModal" class="modal">
   <div class="modal-content">
-    <span class="close-button" onclick="closeInventory()">&times;</span>
-    <h3>🛍️ Inventário</h3>
-    <p>Aqui você verá suas roupas e mobílias.</p>
-    <div id="inventoryList">
-      </div>
+    <span class="close-button" onclick="closeModal('inventoryModal')">&times;</span>
+    <h3>👕 Inventário de Roupas</h3>
+    <div id="inventoryClothesList" class="item-list"></div>
+
+    <h3>🛋️ Mobília Colocada</h3>
+    <div id="inventoryFurnitureList" class="item-list"></div>
+  </div>
+</div>
+
+<div id="shopModal" class="modal">
+  <div class="modal-content">
+    <span class="close-button" onclick="closeModal('shopModal')">&times;</span>
+    <h3>🛍️ Loja de Itens</h3>
+    
+    <h4>Roupas (Skins)</h4>
+    <div id="shopClothesList" class="item-list"></div>
+    
+    <h4>Mobília</h4>
+    <div id="shopFurnitureList" class="item-list"></div>
   </div>
 </div>
 
@@ -208,24 +240,58 @@ button:active{
 let money=100;
 let love=75;
 let roomIndex=0;
-let furnitureItems = []; // Array para rastrear a mobília
+let furnitureItems = []; // Array para rastrear a mobília colocada
+let playerSkinIndex = 0;
+let partnerSkinIndex = 0;
+let petSkinIndex = 0;
+
+// Itens possuídos (Inicialmente apenas os skins base)
+let ownedSkins = {
+    player: [0],
+    partner: [0],
+    pet: [0]
+};
+let ownedFurniture = {}; // Mobília comprada, mas NÃO colocada na sala
+
+// --- Catálogo de Itens ---
+const SHOP_ITEMS = {
+    // Lista de Roupas/Skins
+    skins: [
+        { char: 'player', id: 0, icon: "😊", name: "Padrão", price: 0 },
+        { char: 'partner', id: 0, icon: "🥰", name: "Padrão", price: 0 },
+        { char: 'pet', id: 0, icon: "🐶", name: "Padrão", price: 0 },
+        
+        { char: 'player', id: 1, icon: "😎", name: "Óculos de Sol", price: 50 },
+        { char: 'player', id: 2, icon: "😇", name: "Auréola", price: 75 },
+        { char: 'player', id: 3, icon: "🧑‍💻", name: "Gamer", price: 120 },
+
+        { char: 'partner', id: 1, icon: "😍", name: "Coração", price: 50 },
+        { char: 'partner', id: 2, icon: "😘", name: "Beijinho", price: 75 },
+        { char: 'partner', id: 3, icon: "👩‍🍳", name: "Cozinheira", price: 120 },
+
+        { char: 'pet', id: 1, icon: "🐱", name: "Gatinho", price: 40 },
+        { char: 'pet', id: 2, icon: "🐰", name: "Coelhinho", price: 60 },
+        { char: 'pet', id: 3, icon: "🐻", name: "Ursinho", price: 100 },
+    ],
+    // Lista de Mobília (icon: O emoji, key: Identificador único, price: Preço)
+    furniture: [
+        { icon: "🛋️", key: "sofa_red", name: "Sofá Vermelho", price: 50 },
+        { icon: "🪑", key: "chair_wood", name: "Cadeira de Madeira", price: 30 },
+        { icon: "🖼️", key: "painting", name: "Quadro", price: 80 },
+        { icon: "🪴", key: "plant_pot", name: "Vaso de Planta", price: 40 },
+        { icon: "📺", key: "tv_flat", name: "Televisão", price: 150 },
+    ]
+};
 
 // --- Configurações do Jogo ---
 const rooms=[
-  {name:"Cozinha", color:"#fff3e0"}, // Creme
-  {name:"Sala", color:"#e3f2fd"},   // Azul Claro
-  {name:"Quarto", color:"#fce4ec"},  // Rosa Bebê
-  {name:"Jardim", color:"#e8f5e9"}  // Verde Menta
+  {name:"Cozinha", color:"#fff3e0"},
+  {name:"Sala", color:"#e3f2fd"},
+  {name:"Quarto", color:"#fce4ec"},
+  {name:"Jardim", color:"#e8f5e9"}
 ];
 
-const clothes = {
-  player: ["😊", "😎", "😇"],
-  partner: ["🥰", "😍", "😘"],
-  pet: ["🐶", "🐱", "🐰"]
-}
-
 // --- Elementos DOM ---
-const app=document.getElementById("app");
 const room=document.getElementById("room");
 const status=document.getElementById("status");
 const moneySpan=document.getElementById("money");
@@ -234,6 +300,7 @@ const furnitureContainer = document.getElementById("furniture-container");
 const playerChar = document.getElementById("player");
 const partnerChar = document.getElementById("partner");
 const petChar = document.getElementById("pet");
+const shopModal = document.getElementById("shopModal");
 const inventoryModal = document.getElementById("inventoryModal");
 
 
@@ -245,137 +312,223 @@ function changeRoom(){
   status.innerText="Você está na "+rooms[roomIndex].name;
 }
 
+function updateMoney(amount){
+    money += amount;
+    moneySpan.innerText = money;
+}
+
 function work(){
-  money+=20;
-  moneySpan.innerText=money;
-  status.innerText="Você trabalhou 💼";
+  updateMoney(20);
+  status.innerText="Você trabalhou 💼 (+20$)";
 }
 
 function loveUp(){
   love+=5;
   loveSpan.innerText=love;
-  status.innerText="Momento fofo 💖";
+  status.innerText="Momento fofo 💖 (+5 Love)";
 }
 
-function addItem(type){
-  const itemIcon = type === 'Sofa' ? "🛋️" : "🖼️";
-  const item = document.createElement("div");
-  item.innerText = itemIcon;
-  item.classList.add("furniture-item");
-  
-  // Posição aleatória na parte inferior do cômodo
-  item.style.bottom = Math.floor(Math.random() * 50) + 10 + "px"; // Entre 10px e 60px
-  item.style.left = Math.floor(Math.random() * 260) + 20 + "px"; // Entre 20px e 280px
+// Coloca um item de mobília na sala (não precisa de inventário para isso agora)
+function addItemToRoom(item){
+    // Este item é o item da lista SHOP_ITEMS.furniture
+    const itemElement = document.createElement("div");
+    itemElement.innerText = item.icon;
+    itemElement.classList.add("furniture-item");
+    
+    // Posição aleatória
+    itemElement.style.bottom = Math.floor(Math.random() * 50) + 10 + "px"; 
+    itemElement.style.left = Math.floor(Math.random() * 260) + 20 + "px"; 
 
-  furnitureContainer.appendChild(item);
-  
-  // Adiciona ao rastreamento para o inventário
-  furnitureItems.push({
-    id: Date.now(), // ID único
-    type: type,
-    icon: itemIcon,
-    element: item // Referência ao elemento HTML
-  });
-
-  status.innerText = "Você colocou uma mobília ("+type+") "+itemIcon;
-}
-
-
-// --- Funções de Customização e Inventário (BASE) ---
-
-// Função de exemplo: Mudar a cor do fundo do app/cor do tema
-function changeColor(){
-  // Exemplo de como você faria a troca de cor/tema
-  const newColor = prompt("Digite uma cor de fundo (Ex: #ffd1dc):");
-  if(newColor){
-    app.style.backgroundColor = newColor;
-    status.innerText = "Cor de fundo do app mudada!";
-  }
-}
-
-// Abre a modal do inventário
-function openInventory() {
-  inventoryModal.style.display = "block";
-  updateInventoryList();
-}
-
-// Fecha a modal do inventário
-function closeInventory() {
-  inventoryModal.style.display = "none";
-}
-
-// Atualiza a lista de itens no inventário
-function updateInventoryList() {
-  const inventoryList = document.getElementById("inventoryList");
-  inventoryList.innerHTML = '<h4>Roupas/Skins</h4>';
-
-  // Exemplo de lista de roupas (apenas para o jogador)
-  clothes.player.forEach((skin, index) => {
-    const skinDiv = document.createElement("div");
-    skinDiv.innerHTML = `${skin} <button onclick="changeSkin('player', ${index})">Vestir</button>`;
-    inventoryList.appendChild(skinDiv);
-  });
-  
-  inventoryList.innerHTML += '<h4>Mobília</h4>';
-
-  // Lista de mobília colocada na sala
-  if(furnitureItems.length > 0){
-    furnitureItems.forEach(item => {
-      const itemDiv = document.createElement("div");
-      // Você precisaria de uma função para 'remover' e 'mover' aqui
-      itemDiv.innerHTML = `${item.icon} ${item.type} <button onclick="removeItem(${item.id})">Remover</button>`;
-      inventoryList.appendChild(itemDiv);
+    furnitureContainer.appendChild(itemElement);
+    
+    // Rastreamento da mobília colocada
+    furnitureItems.push({
+        id: Date.now(), // ID único
+        key: item.key,
+        name: item.name,
+        icon: item.icon,
+        element: itemElement 
     });
-  } else {
-     inventoryList.innerHTML += '<p>Nenhuma mobília no momento.</p>';
-  }
+
+    status.innerText = `Mobília colocada: ${item.name} ${item.icon}`;
 }
 
-// Troca a skin do personagem (BASE)
-function changeSkin(char, index) {
-  let target;
-  let skins;
-  if (char === 'player') {
-    target = playerChar;
-    skins = clothes.player;
-  } else if (char === 'partner') {
-    target = partnerChar;
-    skins = clothes.partner;
-  } else if (char === 'pet') {
-    target = petChar;
-    skins = clothes.pet;
-  }
-  
-  if (target && skins) {
-    target.innerText = skins[index];
-    status.innerText = `Skin de ${char} alterada!`;
-    closeInventory();
-  }
+
+// --- Funções da Modal ---
+
+function openModal(modalId) {
+    document.getElementById(modalId).style.display = "block";
 }
 
-// Remove um item de mobília da sala (BASE)
+function closeModal(modalId) {
+    document.getElementById(modalId).style.display = "none";
+}
+
+// --- Funções da Loja ---
+
+function openShop() {
+    updateShopList();
+    openModal('shopModal');
+}
+
+function updateShopList() {
+    const shopClothesList = document.getElementById("shopClothesList");
+    const shopFurnitureList = document.getElementById("shopFurnitureList");
+    
+    shopClothesList.innerHTML = '';
+    shopFurnitureList.innerHTML = '';
+
+    // Roupas
+    SHOP_ITEMS.skins.forEach(item => {
+        // Ignora skins padrão (id=0) para compra
+        if(item.id === 0) return; 
+
+        const isOwned = ownedSkins[item.char].includes(item.id);
+        const div = document.createElement("div");
+        div.innerHTML = `${item.icon} ${item.name} (${item.char})`;
+        
+        if (isOwned) {
+            div.innerHTML += `<span>✔️ Possuído</span>`;
+        } else {
+            div.innerHTML += `<span>💰 ${item.price} <button onclick="buyItem('skin', '${item.char}', ${item.id}, ${item.price})">Comprar</button></span>`;
+        }
+        shopClothesList.appendChild(div);
+    });
+
+    // Mobília (A mobília é infinita e não rastreamos o estoque por simplicidade)
+    SHOP_ITEMS.furniture.forEach(item => {
+        const div = document.createElement("div");
+        div.innerHTML = `${item.icon} ${item.name}`;
+        div.innerHTML += `<span>💰 ${item.price} <button onclick="buyItem('furniture', '${item.key}', ${item.key}, ${item.price})">Comprar</button></span>`;
+        shopFurnitureList.appendChild(div);
+    });
+}
+
+function buyItem(type, key, id, price) {
+    if (money < price) {
+        status.innerText = "❌ Dinheiro insuficiente!";
+        return;
+    }
+
+    updateMoney(-price);
+    
+    if (type === 'skin') {
+        // Adiciona a skin comprada ao inventário de posse
+        const skinItem = SHOP_ITEMS.skins.find(s => s.char === key && s.id === id);
+        if (skinItem && !ownedSkins[key].includes(id)) {
+            ownedSkins[key].push(id);
+            status.innerText = `✅ Você comprou: ${skinItem.name} ${skinItem.icon}!`;
+            updateShopList(); // Atualiza a loja para mostrar que foi comprado
+        }
+    } else if (type === 'furniture') {
+        // Mobília comprada (adicione ao estoque de mobília que pode ser colocada)
+        const furnitureItem = SHOP_ITEMS.furniture.find(f => f.key === key);
+        if (furnitureItem) {
+            // Apenas para simular a compra, você pode querer adicionar ao 'ownedFurniture' aqui
+            status.innerText = `✅ Você comprou: ${furnitureItem.name} ${furnitureItem.icon}! Agora coloque-a na sala.`;
+        }
+    }
+    
+    // Fecha a loja e atualiza o status
+    closeModal('shopModal');
+}
+
+// --- Funções de Inventário (Customização) ---
+
+function openInventory() {
+    updateInventoryList();
+    openModal('inventoryModal');
+}
+
+function updateInventoryList() {
+    const invClothesList = document.getElementById("inventoryClothesList");
+    const invFurnitureList = document.getElementById("inventoryFurnitureList");
+    
+    invClothesList.innerHTML = '';
+    invFurnitureList.innerHTML = '';
+
+    // 1. Lista de Roupas Compradas (Skins)
+    ['player', 'partner', 'pet'].forEach(char => {
+        const charName = char.charAt(0).toUpperCase() + char.slice(1);
+        
+        ownedSkins[char].forEach(skinId => {
+            const skinItem = SHOP_ITEMS.skins.find(s => s.char === char && s.id === skinId);
+            if (!skinItem) return;
+
+            const isEquipped = (char === 'player' && playerSkinIndex === skinId) ||
+                               (char === 'partner' && partnerSkinIndex === skinId) ||
+                               (char === 'pet' && petSkinIndex === skinId);
+
+            const div = document.createElement("div");
+            div.innerHTML = `${skinItem.icon} ${skinItem.name} (${charName})`;
+            
+            if (isEquipped) {
+                div.innerHTML += `<span>✅ Vestindo</span>`;
+            } else {
+                div.innerHTML += `<span><button onclick="changeSkin('${char}', ${skinId})">Vestir</button></span>`;
+            }
+            invClothesList.appendChild(div);
+        });
+    });
+
+    // 2. Mobília Colocada na Sala
+    if(furnitureItems.length > 0){
+        furnitureItems.forEach(item => {
+            const div = document.createElement("div");
+            div.innerHTML = `${item.icon} ${item.name} (${rooms[roomIndex].name})`;
+            div.innerHTML += `<span><button onclick="removeItem(${item.id})">Remover</button></span>`;
+            invFurnitureList.appendChild(div);
+        });
+    } else {
+         invFurnitureList.innerHTML = '<p>Nenhuma mobília na sala.</p>';
+    }
+}
+
+// Troca a skin do personagem e atualiza o display
+function changeSkin(char, id) {
+    const skinItem = SHOP_ITEMS.skins.find(s => s.char === char && s.id === id);
+    if (!skinItem) return;
+
+    if (char === 'player') {
+        playerChar.innerText = skinItem.icon;
+        playerSkinIndex = id;
+    } else if (char === 'partner') {
+        partnerChar.innerText = skinItem.icon;
+        partnerSkinIndex = id;
+    } else if (char === 'pet') {
+        petChar.innerText = skinItem.icon;
+        petSkinIndex = id;
+    }
+    
+    status.innerText = `Skin de ${char} alterada para ${skinItem.name} ${skinItem.icon}!`;
+    updateInventoryList(); // Atualiza a lista para refletir a skin vestida
+    closeModal('inventoryModal');
+}
+
+// Remove um item de mobília da sala
 function removeItem(id) {
-  // Encontra o item
-  const itemIndex = furnitureItems.findIndex(item => item.id === id);
-  if(itemIndex > -1) {
-    // Remove do DOM
-    furnitureItems[itemIndex].element.remove();
-    // Remove do array de rastreamento
-    furnitureItems.splice(itemIndex, 1); 
-    status.innerText = "Mobília removida da sala!";
-    // Atualiza a lista do inventário
-    updateInventoryList(); 
-  }
+    const itemIndex = furnitureItems.findIndex(item => item.id === id);
+    if(itemIndex > -1) {
+        // Remove do DOM
+        furnitureItems[itemIndex].element.remove();
+        // Remove do array de rastreamento
+        furnitureItems.splice(itemIndex, 1); 
+        status.innerText = "Mobília removida da sala!";
+        updateInventoryList(); 
+    }
 }
+
 
 // --- Inicialização ---
-// Fecha a modal se o usuário clicar fora dela
+// Fecha as modais se o usuário clicar fora delas
 window.onclick = function(event) {
-  if (event.target == inventoryModal) {
-    inventoryModal.style.display = "none";
-  }
+    if (event.target == inventoryModal) {
+        closeModal('inventoryModal');
+    }
+    if (event.target == shopModal) {
+        closeModal('shopModal');
+    }
 }
-
 </script>
 
 </body>

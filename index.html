@@ -30,7 +30,7 @@ body{
   display:flex;
   flex-direction:column;
   border-radius:20px;
-  box-shadow:0 10px 30px rgba(0,0,0,0.15); /* Sombra mais forte */
+  box-shadow:0 10px 30px rgba(0,0,0,0.15); 
   overflow:hidden;
 }
 
@@ -72,7 +72,7 @@ header{
   bottom:20px;
   font-size:60px;
   transition:left 0.5s ease-in-out;
-  z-index: 2; /* Sempre na frente da mobília */
+  z-index: 2; 
 }
 
 #player{ left:60px; }
@@ -88,6 +88,11 @@ header{
   cursor:pointer;
   z-index: 1; 
 }
+
+/* Z-index da Mobília conforme a posição (parede, chão, teto) */
+.floor-item { z-index: 1; }
+.wall-item { z-index: 0; }
+.ceiling-item { z-index: 3; }
 
 
 #status{
@@ -125,7 +130,7 @@ button:active{
   transform:translateY(2px);
 }
 
-/* Estilos da Modal (Inventário e Loja) - Melhorados */
+/* Estilos da Modal (Inventário e Loja) */
 .modal {
   display: none;
   position: fixed;
@@ -168,14 +173,13 @@ button:active{
     color: #ff6f91;
 }
 
-/* Estilo para Lista de Itens (Catálogo e Inventário) */
 .item-list {
   display: grid;
-  grid-template-columns: 1fr 1fr; /* Duas colunas para itens */
+  grid-template-columns: 1fr 1fr; 
   gap: 12px;
   padding: 10px 0;
   max-height: 250px;
-  overflow-y: auto; /* Scroll para listas longas */
+  overflow-y: auto; 
 }
 
 .item-card {
@@ -241,10 +245,10 @@ button:active{
 <div id="inventoryModal" class="modal">
   <div class="modal-content">
     <span class="close-button" onclick="closeModal('inventoryModal')">&times;</span>
-    <h3>👕 Suas Roupas (Skins)</h3>
+    <h3>👕 Suas Roupas & Acessórios</h3>
     <div id="inventoryClothesList" class="item-list"></div>
     
-    <h3>🛋️ Mobília na Sala</h3>
+    <h3>🛋️ Mobília no Cômodo Atual</h3>
     <div id="inventoryFurnitureList" class="item-list"></div>
   </div>
 </div>
@@ -254,7 +258,7 @@ button:active{
     <span class="close-button" onclick="closeModal('shopModal')">&times;</span>
     <h3>🛍️ Loja de Itens</h3>
     
-    <h4>Roupas (Skins)</h4>
+    <h4>Roupas & Acessórios</h4>
     <div id="shopClothesList" class="item-list"></div>
     
     <h4>Mobília</h4>
@@ -276,46 +280,112 @@ button:active{
 let money = 100;
 let love = 75;
 let roomIndex = 0;
-let furnitureItems = []; // Mobília colocada na sala (elementos HTML)
+
+// Mobília colocada em CADA cômodo (CHAVE DE MUDANÇA)
+let placedFurniture = {
+    // Exemplo: '0': [ {key: 'sofa_red', id: 123, bottom: '...', left: '...'}, ... ],
+};
 
 // Estado da Customização
 let playerSkinId = 0;
 let partnerSkinId = 0;
 let petSkinId = 0;
 
+// Acessórios
+let playerAccessoryId = 0;
+let partnerAccessoryId = 0;
+let petAccessoryId = 0;
+
+
 // Itens possuídos (IDs dos catálogos)
 let ownedSkins = {
-    player: [0], // 0 é o default
+    player: [0], 
+    partner: [0],
+    pet: [0]
+};
+let ownedAccessories = { // NOVO
+    player: [0], 
     partner: [0],
     pet: [0]
 };
 let ownedFurniture = []; // Chaves da mobília que pode ser colocada
 
-// --- Catálogo de Itens ---
+// --- Catálogo de Itens (EXPANDIDO) ---
 const SHOP_ITEMS = {
+    // --- SKINS (Roupas/Corpo) ---
     skins: [
-        { char: 'player', id: 0, icon: "😊", name: "Padrão", price: 0 },
-        { char: 'partner', id: 0, icon: "🥰", name: "Padrão", price: 0 },
-        { char: 'pet', id: 0, icon: "🐶", name: "Padrão", price: 0 },
+        // Padrão (IDs 0)
+        { type: 'skin', char: 'player', id: 0, icon: "😊", name: "Padrão", price: 0 },
+        { type: 'skin', char: 'partner', id: 0, icon: "🥰", name: "Padrão", price: 0 },
+        { type: 'skin', char: 'pet', id: 0, icon: "🐶", name: "Padrão", price: 0 },
         
-        { char: 'player', id: 1, icon: "😎", name: "Óculos de Sol", price: 50 },
-        { char: 'player', id: 2, icon: "😇", name: "Auréola", price: 75 },
-        { char: 'player', id: 3, icon: "🧑‍💻", name: "Gamer", price: 120 },
-
-        { char: 'partner', id: 1, icon: "😍", name: "Coração", price: 50 },
-        { char: 'partner', id: 2, icon: "😘", name: "Beijinho", price: 75 },
-        { char: 'partner', id: 3, icon: "👩‍🍳", name: "Cozinheira", price: 120 },
-
-        { char: 'pet', id: 1, icon: "🐱", name: "Gatinho", price: 40 },
-        { char: 'pet', id: 2, icon: "🐰", name: "Coelhinho", price: 60 },
-        { char: 'pet', id: 3, icon: "🐻", name: "Ursinho", price: 100 },
+        // Player Skins
+        { type: 'skin', char: 'player', id: 1, icon: "😎", name: "Óculos de Sol", price: 50 },
+        { type: 'skin', char: 'player', id: 2, icon: "😇", name: "Auréola", price: 75 },
+        { type: 'skin', char: 'player', id: 3, icon: "🧑‍💻", name: "Gamer", price: 120 },
+        { type: 'skin', char: 'player', id: 4, icon: "👩‍🎤", name: "Rock Star", price: 180 },
+        { type: 'skin', char: 'player', id: 5, icon: "🤡", name: "Palhaço", price: 90 }, // NOVO
+        
+        // Partner Skins
+        { type: 'skin', char: 'partner', id: 1, icon: "😍", name: "Coração", price: 50 },
+        { type: 'skin', char: 'partner', id: 2, icon: "😘", name: "Beijinho", price: 75 },
+        { type: 'skin', char: 'partner', id: 3, icon: "👩‍🍳", name: "Cozinheira", price: 120 },
+        { type: 'skin', char: 'partner', id: 4, icon: "👨‍🍳", name: "Chef Famoso", price: 180 }, 
+        { type: 'skin', char: 'partner', id: 5, icon: "🧍🏽‍♀️", name: "Feminino Padrão", price: 0 }, // NOVO (Base)
+        { type: 'skin', char: 'partner', id: 6, icon: "🧍🏻", name: "Masculino Claro", price: 0 }, // NOVO (Base)
+        { type: 'skin', char: 'partner', id: 7, icon: "🧍🏻‍♀️", name: "Feminino Claro", price: 0 }, // NOVO (Base)
+        
+        // Pet Skins (Base e Fantasias)
+        { type: 'skin', char: 'pet', id: 1, icon: "🐱", name: "Gatinho", price: 40 },
+        { type: 'skin', char: 'pet', id: 2, icon: "🐰", name: "Coelhinho", price: 60 },
+        { type: 'skin', char: 'pet', id: 3, icon: "🐻", name: "Ursinho", price: 100 },
+        { type: 'skin', char: 'pet', id: 4, icon: "🐵", name: "Macaquinho", price: 120 },
+        { type: 'skin', char: 'pet', id: 5, icon: "🐯", name: "Tigrinho", price: 150 },
+        { type: 'skin', char: 'pet', id: 6, icon: "🐺", name: "Lobinho", price: 150 },
+        { type: 'pet', id: 7, icon: "🐹", name: "Hamster", price: 110 }, // NOVO
+        { type: 'pet', id: 8, icon: "🦊", name: "Raposa", price: 130 }, // NOVO
+        { type: 'pet', id: 9, icon: "🐷", name: "Porquinho", price: 90 }, // NOVO
+        { type: 'pet', id: 10, icon: "🐴", name: "Cavalinho", price: 160 }, // NOVO
+        { type: 'pet', id: 11, icon: "🦄", name: "Unicórnio", price: 200 },
+        { type: 'pet', id: 12, icon: "🐉", name: "Dragãozinho", price: 250 },
     ],
+    // --- ACCESSORIES (Acessórios de Cabeça) ---
+    accessories: [
+        { type: 'accessory', char: 'player', id: 0, icon: "", name: "Nenhum", price: 0 }, // Padrão
+        { type: 'accessory', char: 'partner', id: 0, icon: "", name: "Nenhum", price: 0 }, // Padrão
+        { type: 'accessory', char: 'pet', id: 0, icon: "", name: "Nenhum", price: 0 }, // Padrão
+
+        { type: 'accessory', char: 'player', id: 1, icon: "🎀", name: "Laço", price: 40 },
+        { type: 'accessory', char: 'player', id: 2, icon: "👒", name: "Chapéu de Palha", price: 60 },
+        { type: 'accessory', char: 'player', id: 3, icon: "🎓", name: "Capelo", price: 80 },
+        { type: 'accessory', char: 'partner', id: 1, icon: "🎩", name: "Cartola", price: 70 },
+        { type: 'pet', id: 1, icon: "👑", name: "Coroa (Pet)", price: 100 },
+        { type: 'pet', id: 2, icon: "🧢", name: "Boné", price: 50 },
+    ],
+    // --- FURNITURE (Mobília) ---
     furniture: [
-        { icon: "🛋️", key: "sofa_red", name: "Sofá Vermelho", price: 50 },
-        { icon: "🪑", key: "chair_wood", name: "Cadeira de Madeira", price: 30 },
-        { icon: "🖼️", key: "painting", name: "Quadro", price: 80 },
-        { icon: "🪴", key: "plant_pot", name: "Vaso de Planta", price: 40 },
-        { icon: "📺", key: "tv_flat", name: "Televisão", price: 150 },
+        // Chão/Parede (posição) é definido pelo código de colocação
+        // Posição: 0 = Chão (Baixo), 1 = Parede (Meio), 2 = Teto (Alto)
+        { icon: "🛋️", key: "sofa_red", name: "Sofá Vermelho", price: 50, position: 0 },
+        { icon: "🪑", key: "chair_wood", name: "Cadeira de Madeira", price: 30, position: 0 },
+        { icon: "🖼️", key: "painting", name: "Quadro", price: 80, position: 1 },
+        { icon: "🪴", key: "plant_pot", name: "Vaso de Planta", price: 40, position: 0 },
+        { icon: "📺", key: "tv_flat", name: "Televisão", price: 150, position: 1 },
+        { icon: "🛏️", key: "bed_fancy", name: "Cama de Casal Luxo", price: 300, position: 0 },
+        { icon: "💻", key: "gaming_pc", name: "Setup Gamer", price: 220, position: 0 },
+        { icon: "🎹", key: "piano", name: "Piano de Cauda", price: 400, position: 0 },
+        { icon: "🍽️", key: "dinner_set", name: "Jogo de Jantar", price: 120, position: 0 },
+        { icon: "🎈", key: "balloons", name: "Balões de Festa", price: 60, position: 1 }, // NOVO (Parede)
+        
+        // Novos itens de Mobília
+        { icon: "⛩️", key: "shrine", name: "Santuário", price: 250, position: 0 }, // NOVO (Chão)
+        { icon: "⛲", key: "fountain", name: "Fonte", price: 350, position: 0 }, // NOVO (Chão)
+        { icon: "💡", key: "light_bulb", name: "Lâmpada", price: 80, position: 2 }, // NOVO (Teto)
+        { icon: "🪩", key: "disco_ball", name: "Bola de Disco", price: 150, position: 2 }, // NOVO (Teto)
+        { icon: "⛳", key: "golf_hole", name: "Buraco de Golf", price: 70, position: 0 }, // NOVO (Chão)
+        { icon: "⛺", key: "tent", name: "Barraca", price: 180, position: 0 }, // NOVO (Chão)
+        { icon: "⛱️", key: "umbrella", name: "Guarda-sol", price: 100, position: 0 }, // NOVO (Chão)
+        { icon: "🪟", key: "window", name: "Janela", price: 160, position: 1 }, // NOVO (Parede)
     ]
 };
 
@@ -331,6 +401,14 @@ const petChar = document.getElementById("pet");
 
 // --- Funções de Estado e Salvar/Carregar ---
 
+function getSkinIcon(char, id) {
+    return SHOP_ITEMS.skins.find(s => s.char === char && s.id === id)?.icon || '';
+}
+
+function getAccessoryIcon(char, id) {
+    return SHOP_ITEMS.accessories.find(a => a.char === char && a.id === id)?.icon || '';
+}
+
 function updateDisplay() {
     moneySpan.innerText = money;
     loveSpan.innerText = love;
@@ -339,10 +417,22 @@ function updateDisplay() {
     room.style.background = rooms[roomIndex].color;
     status.innerText = `Você está na ${rooms[roomIndex].name}`;
 
-    // Atualiza a aparência dos personagens
-    playerChar.innerText = SHOP_ITEMS.skins.find(s => s.char === 'player' && s.id === playerSkinId)?.icon || '😊';
-    partnerChar.innerText = SHOP_ITEMS.skins.find(s => s.char === 'partner' && s.id === partnerSkinId)?.icon || '🥰';
-    petChar.innerText = SHOP_ITEMS.skins.find(s => s.char === 'pet' && s.id === petSkinId)?.icon || '🐶';
+    // Atualiza a aparência dos personagens (Skin + Acessório)
+    const playerSkin = getSkinIcon('player', playerSkinId);
+    const partnerSkin = getSkinIcon('partner', partnerSkinId);
+    const petSkin = getSkinIcon('pet', petSkinId);
+    
+    const playerAccessory = getAccessoryIcon('player', playerAccessoryId);
+    const partnerAccessory = getAccessoryIcon('partner', partnerAccessoryId);
+    const petAccessory = getAccessoryIcon('pet', petAccessoryId);
+    
+    // Concatena a skin e o acessório para exibir (pode exigir ajustes manuais de emoji)
+    playerChar.innerText = playerAccessory + playerSkin;
+    partnerChar.innerText = partnerAccessory + partnerSkin;
+    petChar.innerText = petAccessory + petSkin;
+    
+    // Desenha a mobília do cômodo atual
+    renderRoomFurniture();
 }
 
 function saveGame() {
@@ -353,14 +443,14 @@ function saveGame() {
         playerSkinId,
         partnerSkinId,
         petSkinId,
+        playerAccessoryId, // NOVO
+        partnerAccessoryId, // NOVO
+        petAccessoryId, // NOVO
         ownedSkins,
+        ownedAccessories, // NOVO
         ownedFurniture,
-        // Mobília na sala (salva apenas os dados para recriar, não o elemento HTML)
-        placedFurnitureData: furnitureItems.map(item => ({
-            key: item.key,
-            bottom: item.element.style.bottom,
-            left: item.element.style.left
-        }))
+        // Mobília na sala (agora é o objeto completo de todos os cômodos)
+        placedFurniture 
     };
     
     try {
@@ -387,19 +477,20 @@ function loadGame() {
             playerSkinId = gameState.playerSkinId;
             partnerSkinId = gameState.partnerSkinId;
             petSkinId = gameState.petSkinId;
+            
+            // Carrega Acessórios (Adicionado Fallback para evitar erros em saves antigos)
+            playerAccessoryId = gameState.playerAccessoryId || 0;
+            partnerAccessoryId = gameState.partnerAccessoryId || 0;
+            petAccessoryId = gameState.petAccessoryId || 0;
+            
             ownedSkins = gameState.ownedSkins;
+            ownedAccessories = gameState.ownedAccessories || { player: [0], partner: [0], pet: [0] }; // Fallback
             ownedFurniture = gameState.ownedFurniture;
 
-            // Limpa a sala e recria a mobília
-            furnitureContainer.innerHTML = '';
-            furnitureItems = [];
-            gameState.placedFurnitureData.forEach(data => {
-                const item = SHOP_ITEMS.furniture.find(f => f.key === data.key);
-                if (item) {
-                    recreateFurniture(item, data.bottom, data.left);
-                }
-            });
-
+            // Carrega a mobília de TODOS os cômodos (CHAVE DE MUDANÇA)
+            placedFurniture = gameState.placedFurniture || {};
+            
+            // Inicializa a mobília do cômodo atual
             updateDisplay();
             status.innerText = "✅ Jogo Carregado!";
         } else {
@@ -408,6 +499,8 @@ function loadGame() {
     } catch (e) {
         status.innerText = "❌ Erro ao carregar o jogo. Iniciando novo jogo.";
         console.error("Load error:", e);
+        // Limpa qualquer dado quebrado se o carregamento falhar
+        localStorage.removeItem('pocketCozyLifeSave');
         updateDisplay();
     }
 }
@@ -442,49 +535,81 @@ function work(){
 function loveUp(){
   love+=5;
   updateDisplay();
-  saveGame(); // Adicionado saveGame() aqui
+  saveGame(); 
   status.innerText="Momento fofo 💖 (+5 Love)";
 }
 
-// Recria um item de mobília na sala com base em dados salvos
-function recreateFurniture(item, bottom, left) {
-    const itemElement = document.createElement("div");
-    itemElement.innerText = item.icon;
-    itemElement.classList.add("furniture-item");
+// NOVO: Desenha a mobília do cômodo atual
+function renderRoomFurniture() {
+    furnitureContainer.innerHTML = '';
+    const currentRoomKey = String(roomIndex);
     
-    itemElement.style.bottom = bottom;
-    itemElement.style.left = left; 
+    // Garante que a lista exista
+    placedFurniture[currentRoomKey] = placedFurniture[currentRoomKey] || [];
+    
+    // Desenha cada item na sala
+    placedFurniture[currentRoomKey].forEach(itemData => {
+        const itemCatalog = SHOP_ITEMS.furniture.find(f => f.key === itemData.key);
+        if (!itemCatalog) return;
 
-    furnitureContainer.appendChild(itemElement);
-    
-    furnitureItems.push({
-        id: Date.now() + Math.random(), // ID único
-        key: item.key,
-        name: item.name,
-        icon: item.icon,
-        element: itemElement 
+        const itemElement = document.createElement("div");
+        itemElement.innerText = itemCatalog.icon;
+        itemElement.classList.add("furniture-item");
+
+        // Define a classe de Z-index baseado na posição
+        if (itemCatalog.position === 0) itemElement.classList.add("floor-item");
+        else if (itemCatalog.position === 1) itemElement.classList.add("wall-item");
+        else if (itemCatalog.position === 2) {
+            itemElement.classList.add("ceiling-item");
+            // Se for luz/teto, inverte para dar a sensação de pendurado
+            if(itemCatalog.key === 'light_bulb') itemElement.style.transform = "rotate(180deg)";
+        }
+        
+        itemElement.style.bottom = itemData.bottom;
+        itemElement.style.left = itemData.left; 
+
+        // Adiciona um listener para permitir remover pelo clique na sala (opcional)
+        itemElement.onclick = () => removeItem(itemData.id, currentRoomKey);
+
+        furnitureContainer.appendChild(itemElement);
     });
 }
 
 // Coloca um item de mobília na sala (a partir da Place Modal)
 function addItemToRoom(key){
-    const item = SHOP_ITEMS.furniture.find(f => f.key === key);
-    if (!item) return;
+    const itemCatalog = SHOP_ITEMS.furniture.find(f => f.key === key);
+    if (!itemCatalog) return;
+    
+    const currentRoomKey = String(roomIndex);
 
-    // Remove o item da lista de posse para "colocar" (se você quiser rastrear estoque)
-    const indexInOwned = ownedFurniture.indexOf(key);
-    if (indexInOwned > -1) {
-         // Se quiser rastrear o estoque de móveis, remova aqui:
-         // ownedFurniture.splice(indexInOwned, 1);
+    // Posição ajustada conforme a categoria:
+    let bottom, left;
+
+    if (itemCatalog.position === 0) { // Chão
+        bottom = Math.floor(Math.random() * 50) + 10 + "px"; 
+        left = Math.floor(Math.random() * 260) + 20 + "px"; 
+    } else if (itemCatalog.position === 1) { // Parede/Meio
+        bottom = Math.floor(Math.random() * 150) + 100 + "px"; 
+        left = Math.floor(Math.random() * 260) + 20 + "px"; 
+    } else { // Teto/Cima
+        bottom = Math.floor(Math.random() * 50) + 300 + "px"; 
+        left = Math.floor(Math.random() * 260) + 20 + "px"; 
     }
     
-    // Posição aleatória (como antes)
-    const bottom = Math.floor(Math.random() * 50) + 10 + "px"; 
-    const left = Math.floor(Math.random() * 260) + 20 + "px"; 
-    
-    recreateFurniture(item, bottom, left);
+    const newItemData = {
+        id: Date.now() + Math.random(), // ID único para remoção
+        key: key,
+        bottom: bottom,
+        left: left
+    };
+
+    // Adiciona o item à lista do cômodo atual
+    placedFurniture[currentRoomKey] = placedFurniture[currentRoomKey] || [];
+    placedFurniture[currentRoomKey].push(newItemData);
+
+    renderRoomFurniture();
     closeModal('placeModal');
-    status.innerText = `Mobília colocada: ${item.name} ${item.icon}`;
+    status.innerText = `Mobília colocada em ${rooms[roomIndex].name}: ${itemCatalog.name} ${itemCatalog.icon}`;
     saveGame();
 }
 
@@ -512,25 +637,34 @@ function updateShopList() {
     
     shopClothesList.innerHTML = '';
     shopFurnitureList.innerHTML = '';
+    
+    // --- SKINS & ACCESSORIES ---
+    const allCustomItems = [...SHOP_ITEMS.skins, ...SHOP_ITEMS.accessories];
 
-    // Roupas
-    SHOP_ITEMS.skins.filter(item => item.id !== 0).forEach(item => {
-        const isOwned = ownedSkins[item.char].includes(item.id);
+    allCustomItems.filter(item => item.id !== 0 || item.type === 'accessory').forEach(item => { // Filtra IDs 0, exceto acessórios que usam ID 0 para "nenhum"
+        let isOwned = false;
+        if(item.type === 'skin') {
+            isOwned = ownedSkins[item.char].includes(item.id);
+        } else if (item.type === 'accessory') {
+            isOwned = ownedAccessories[item.char].includes(item.id);
+        }
+        
         const card = document.createElement("div");
         card.classList.add("item-card");
 
         card.innerHTML = `<span class="icon">${item.icon}</span>`;
         card.innerHTML += `<p>${item.name} (${item.char === 'player' ? 'Você' : item.char === 'partner' ? 'Parceiro' : 'Pet'})</p>`;
         
-        if (isOwned) {
+        if (isOwned && item.price > 0) { // Se for item gratuito (base skin), mostre o botão de compra para facilitar encontrar
             card.innerHTML += `<button style="background:#4CAF50; box-shadow:0 3px 0 #388E3C;">✔️ Possuído</button>`;
         } else {
-            card.innerHTML += `<button onclick="buyItem('skin', '${item.char}', ${item.id}, ${item.price})">💰 ${item.price}</button>`;
+            // Nova chamada para buyItem que inclui o tipo (skin ou accessory)
+            card.innerHTML += `<button onclick="buyItem('${item.type}', '${item.char}', ${item.id}, ${item.price})">💰 ${item.price}</button>`;
         }
         shopClothesList.appendChild(card);
     });
-
-    // Mobília (A mobília é comprada e armazenada no inventário 'ownedFurniture')
+    
+    // --- MOBÍLIA ---
     SHOP_ITEMS.furniture.forEach(item => {
         const card = document.createElement("div");
         card.classList.add("item-card");
@@ -543,7 +677,7 @@ function updateShopList() {
     });
 }
 
-function buyItem(type, key, id, price) {
+function buyItem(type, keyOrChar, id, price) {
     if (money < price) {
         status.innerText = "❌ Dinheiro insuficiente!";
         return;
@@ -552,16 +686,23 @@ function buyItem(type, key, id, price) {
     updateMoney(-price); // Já chama saveGame()
     
     if (type === 'skin') {
-        const skinItem = SHOP_ITEMS.skins.find(s => s.char === key && s.id === id);
-        if (skinItem && !ownedSkins[key].includes(id)) {
-            ownedSkins[key].push(id);
+        const skinItem = SHOP_ITEMS.skins.find(s => s.char === keyOrChar && s.id === id);
+        if (skinItem && !ownedSkins[keyOrChar].includes(id)) {
+            ownedSkins[keyOrChar].push(id);
             status.innerText = `✅ Você comprou: ${skinItem.name} ${skinItem.icon}!`;
-            updateShopList(); // Atualiza a loja
+            updateShopList();
+        }
+    } else if (type === 'accessory') {
+        const accItem = SHOP_ITEMS.accessories.find(a => a.char === keyOrChar && a.id === id);
+        if (accItem && !ownedAccessories[keyOrChar].includes(id)) {
+            ownedAccessories[keyOrChar].push(id);
+            status.innerText = `✅ Você comprou o acessório: ${accItem.name} ${accItem.icon}!`;
+            updateShopList();
         }
     } else if (type === 'furniture') {
-        const furnitureItem = SHOP_ITEMS.furniture.find(f => f.key === key);
+        const furnitureItem = SHOP_ITEMS.furniture.find(f => f.key === keyOrChar);
         if (furnitureItem) {
-            ownedFurniture.push(key); // Adiciona ao estoque de mobília que pode ser colocada
+            ownedFurniture.push(keyOrChar);
             status.innerText = `✅ Você comprou: ${furnitureItem.name} ${furnitureItem.icon}! Agora coloque-a na sala.`;
         }
     }
@@ -581,9 +722,10 @@ function openInventory() {
 function updateInventoryClothesList() {
     const invClothesList = document.getElementById("inventoryClothesList");
     invClothesList.innerHTML = '';
-
-    // Lista de Roupas Compradas (Skins)
+    
+    // Lista de Roupas & Acessórios Comprados
     ['player', 'partner', 'pet'].forEach(char => {
+        // Skins
         ownedSkins[char].forEach(skinId => {
             const skinItem = SHOP_ITEMS.skins.find(s => s.char === char && s.id === skinId);
             if (!skinItem) return;
@@ -595,12 +737,34 @@ function updateInventoryClothesList() {
             const card = document.createElement("div");
             card.classList.add("item-card");
             card.innerHTML = `<span class="icon">${skinItem.icon}</span>`;
-            card.innerHTML += `<p>${skinItem.name}</p>`;
+            card.innerHTML += `<p>Skin: ${skinItem.name}</p>`;
             
             if (isEquipped) {
                 card.innerHTML += `<span class="equipped">✅ Vestindo</span>`;
             } else {
-                card.innerHTML += `<span><button onclick="changeSkin('${char}', ${skinId})">Vestir</button></span>`;
+                card.innerHTML += `<span><button onclick="changeSkin('${char}', ${skinId})">Vestir Skin</button></span>`;
+            }
+            invClothesList.appendChild(card);
+        });
+
+        // Acessórios
+        ownedAccessories[char].forEach(accId => {
+            const accItem = SHOP_ITEMS.accessories.find(a => a.char === char && a.id === accId);
+            if (!accItem) return;
+
+            const isEquipped = (char === 'player' && playerAccessoryId === accId) ||
+                               (char === 'partner' && partnerAccessoryId === accId) ||
+                               (char === 'pet' && petAccessoryId === accId);
+
+            const card = document.createElement("div");
+            card.classList.add("item-card");
+            card.innerHTML = `<span class="icon">${accItem.icon || '➖'}</span>`; // '➖' se for o acessório "Nenhum"
+            card.innerHTML += `<p>Acessório: ${accItem.name}</p>`;
+            
+            if (isEquipped) {
+                card.innerHTML += `<span class="equipped">✅ Usando</span>`;
+            } else {
+                card.innerHTML += `<span><button onclick="changeAccessory('${char}', ${accId})">Usar Acessório</button></span>`;
             }
             invClothesList.appendChild(card);
         });
@@ -610,19 +774,24 @@ function updateInventoryClothesList() {
 function updateInventoryFurnitureList() {
     const invFurnitureList = document.getElementById("inventoryFurnitureList");
     invFurnitureList.innerHTML = '';
+    const currentRoomKey = String(roomIndex);
     
     // Mobília Colocada na Sala
-    if(furnitureItems.length > 0){
-        furnitureItems.forEach(item => {
+    if(placedFurniture[currentRoomKey] && placedFurniture[currentRoomKey].length > 0){
+        placedFurniture[currentRoomKey].forEach(itemData => {
+            const itemCatalog = SHOP_ITEMS.furniture.find(f => f.key === itemData.key);
+            if (!itemCatalog) return;
+
             const card = document.createElement("div");
             card.classList.add("item-card");
-            card.innerHTML = `<span class="icon">${item.icon}</span>`;
-            card.innerHTML += `<p>${item.name}</p>`;
-            card.innerHTML += `<span><button onclick="removeItem(${item.id})">Remover</button></span>`;
+            card.innerHTML = `<span class="icon">${itemCatalog.icon}</span>`;
+            card.innerHTML += `<p>${itemCatalog.name}</p>`;
+            // Chamada de removeItem precisa do ID do item na sala e do cômodo
+            card.innerHTML += `<span><button onclick="removeItem(${itemData.id}, '${currentRoomKey}')">Remover</button></span>`;
             invFurnitureList.appendChild(card);
         });
     } else {
-         invFurnitureList.innerHTML = '<p style="grid-column: 1 / span 2; text-align: center;">Nenhuma mobília na sala.</p>';
+         invFurnitureList.innerHTML = '<p style="grid-column: 1 / span 2; text-align: center;">Nenhuma mobília neste cômodo.</p>';
     }
 }
 
@@ -641,21 +810,48 @@ function changeSkin(char, id) {
     
     status.innerText = `Skin de ${char} alterada para ${skinItem.name} ${skinItem.icon}!`;
     updateDisplay();
-    updateInventoryClothesList(); // Atualiza a modal do inventário
+    updateInventoryClothesList(); 
     saveGame();
 }
 
-// Remove um item de mobília da sala e salva
-function removeItem(id) {
-    const itemIndex = furnitureItems.findIndex(item => item.id === id);
+// NOVO: Troca o acessório do personagem e salva
+function changeAccessory(char, id) {
+    const accItem = SHOP_ITEMS.accessories.find(a => a.char === char && a.id === id);
+    if (!accItem) return;
+
+    if (char === 'player') {
+        playerAccessoryId = id;
+    } else if (char === 'partner') {
+        partnerAccessoryId = id;
+    } else if (char === 'pet') {
+        petAccessoryId = id;
+    }
+    
+    status.innerText = `Acessório de ${char} alterado para ${accItem.name} ${accItem.icon}!`;
+    updateDisplay();
+    updateInventoryClothesList(); 
+    saveGame();
+}
+
+// NOVO: Remove um item de mobília da sala (precisa do ID e do cômodo)
+function removeItem(itemId, roomKey = String(roomIndex)) {
+    // Garante que estamos olhando a lista do cômodo correto
+    const roomFurniture = placedFurniture[roomKey];
+    if(!roomFurniture) return;
+
+    const itemIndex = roomFurniture.findIndex(item => item.id === itemId);
+    
     if(itemIndex > -1) {
-        furnitureItems[itemIndex].element.remove();
-        furnitureItems.splice(itemIndex, 1); 
-        status.innerText = "Mobília removida da sala!";
-        updateInventoryFurnitureList(); 
+        // Remove do array de dados
+        roomFurniture.splice(itemIndex, 1); 
+        
+        status.innerText = "Mobília removida do cômodo!";
+        renderRoomFurniture(); // Redesenha a sala
+        updateInventoryFurnitureList(); // Atualiza a modal
         saveGame();
     }
 }
+
 
 // --- Funções de Colocar Mobília ---
 
@@ -676,13 +872,12 @@ function updatePlaceFurnitureList() {
             const item = SHOP_ITEMS.furniture.find(f => f.key === key);
             if (!item) return;
             
-            // Conta quantas cópias deste item o usuário possui
+            // Conta quantas cópias deste item o usuário possui (opcional para exibição)
             const count = ownedFurniture.filter(k => k === key).length; 
 
             const card = document.createElement("div");
             card.classList.add("item-card");
             card.innerHTML = `<span class="icon">${item.icon}</span>`;
-            // Não exibimos a contagem, pois o objetivo é ter várias cópias (como em Pocket Love)
             card.innerHTML += `<p>${item.name}</p>`; 
             card.innerHTML += `<span><button onclick="addItemToRoom('${key}')">Colocar</button></span>`;
             
